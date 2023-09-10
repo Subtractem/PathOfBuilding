@@ -996,6 +996,7 @@ function ItemsTabClass:Load(xml, dbFileName)
 		self.itemSetOrderList[1] = 1
 	end
 	self:SetActiveItemSet(tonumber(xml.attrib.activeItemSet) or 1)
+	self.build:SetItemList(self.itemSets)
 	self:ResetUndo()
 end
 

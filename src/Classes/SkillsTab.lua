@@ -406,6 +406,8 @@ function SkillsTabClass:Load(xml, fileName)
 	self:SetActiveSkillSet(tonumber(xml.attrib.activeSkillSet) or 1)
 	self:SetDisplayGroup(self.socketGroupList[1])
 	self:ResetUndo()
+
+	self.build:SetSkillList(self.skillSets)
 end
 
 function SkillsTabClass:Save(xml)

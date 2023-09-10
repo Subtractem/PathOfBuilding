@@ -1630,7 +1630,6 @@ end
 local function logNoHandler(skillName, triggerName, uniqueName)
 	local message = s_format("WARNING: no handler for: %s, %s, %s ", skillName, triggerName, uniqueName)
 	return function() 
-				ConPrintf(message) 
 			end
 end
 

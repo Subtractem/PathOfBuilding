@@ -24,6 +24,7 @@ local function InsertIfNew(t, val)
 end
 
 function buildMode:Init(dbFileName, buildName, buildXML, convertBuild)
+	self.buildXML = buildXML
 	self.dbFileName = dbFileName
 	self.buildName = buildName
 	if dbFileName then
@@ -227,6 +228,52 @@ function buildMode:Init(dbFileName, buildName, buildXML, convertBuild)
 		self.spec:SetWindowTitleWithBuildClass()
 		self.buildFlag = true
 	end)
+
+	self.controls.buildPreset = new("DropDownControl", {"LEFT",self.controls.ascendDrop,"RIGHT"}, 8, 0, 120, 20, {}, function(index, value)
+		-- To do this "properly" we'd want to have everything
+		-- indexed and set the preset based on that. However,
+		-- since the presets are defined by user name conventions
+		-- and we don't enforce uniqueness between them, just picking
+		-- the first valid name is legit.
+
+		local treeList = self.controls.buildPreset.treeList
+		local itemList = self.controls.buildPreset.itemList
+		local skillList = self.controls.buildPreset.skillList
+
+		if treeList == nil or itemList == nil or skillList == nil then
+			return
+		end
+
+		local newSpecId = nil
+		for id, spec in ipairs(treeList) do
+			if value == spec then
+				newSpecId = id
+			end
+		end
+
+		local newItemId = nil
+		for id, spec in ipairs(itemList) do
+			if value == spec then
+				newItemId = id
+			end
+		end
+
+		local newSkillId = nil
+		for id, spec in ipairs(skillList) do
+			if value == spec then
+				newSkillId = id
+			end
+		end
+
+		if newSpecId == nil or newItemId == nil or newSkillId == nil then
+			return
+		end
+
+		self.treeTab:SetActiveSpec(newSpecId)
+		self.itemsTab:SetActiveItemSet(newItemId)
+		self.skillsTab:SetActiveSkillSet(newSkillId)
+	end)
+	self.controls.buildPreset.tooltipText = "Loadouts of matching Item, Skill, and Trees"
 
 	-- List of display stats
 	-- This defines the stats in the side bar, and also which stats show in node/item comparisons
@@ -730,6 +777,63 @@ function buildMode:Init(dbFileName, buildName, buildXML, convertBuild)
 	--]]
 
 	self.abortSave = false
+end
+
+-- Spec list is set differently than item and skill list
+-- since the data is already processed in TreeTab
+function buildMode:SetSpecList(list)
+	self.controls.buildPreset.treeList = list
+	self:OnBuildPresetUpdate()
+end
+
+function buildMode:SetItemList(list)
+	local newItemList = {}
+
+	for id, item in ipairs(list) do
+		t_insert(newItemList, item.title)
+	end
+
+	self.controls.buildPreset.itemList = newItemList
+	self:OnBuildPresetUpdate()
+end
+
+function buildMode:SetSkillList(list)
+	local newSkillList = {}
+
+	for id, skill in ipairs(list) do
+		t_insert(newSkillList, skill.title)
+	end
+
+	self.controls.buildPreset.skillList = newSkillList
+	self:OnBuildPresetUpdate()
+end
+
+function buildMode:OnBuildPresetUpdate()
+	if self == nil or
+			self.controls.buildPreset.treeList == nil or
+			self.controls.buildPreset.skillList == nil or
+			self.controls.buildPreset.itemList == nil then
+		return	
+	end
+
+	local treeList = self.controls.buildPreset.treeList
+	local skillList = self.controls.buildPreset.skillList
+	local itemList = self.controls.buildPreset.itemList
+
+	local filteredList = {}
+
+	-- TODO: make this a hash before committing. DO NOT COMMIT LIKE THIS YOU SCRUB
+	for id, tree in ipairs(treeList) do
+		for id, skill in ipairs(skillList) do
+			for id, item in ipairs(itemList) do
+				if (tree == skill and tree == item) then
+					t_insert(filteredList, tree)
+				end
+			end
+		end
+	end
+
+	self.controls.buildPreset.list = filteredList
 end
 
 function buildMode:EstimatePlayerProgress()
@@ -1632,6 +1736,7 @@ function buildMode:LoadDBFile()
 		return true
 	end
 	local xmlText = file:read("*a")
+	self.buildXML = xmlText
 	file:close()
 	return self:LoadDB(xmlText, self.dbFileName)
 end
